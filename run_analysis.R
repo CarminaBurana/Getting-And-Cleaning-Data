@@ -1,3 +1,13 @@
+##
+##	Cache the Variables, from UCI HAR Dataset, that expose both Mean and Standard Deviation.
+##
+##	Store the following info for each such variable:
+##		1. the Variable's Index in the original feature set (see features.txt file for the entire set of variables 
+##			from which these 66 variables were extracted)
+##		2. the short/compressed feature name (e.g. "tBodyAcc-mean()-X") as it appears in features.txt file provided
+##		3. a descriptive variable name to be used in final tidy data set
+##
+
 variables <- data.frame(stringsAsFactors=FALSE, rbind(
 	c(1,"tBodyAcc-mean()-X","Mean of Time Domain Body Acceleration Along the X Axis"),
 	c(2,"tBodyAcc-mean()-Y","Mean of Time Domain Body Acceleration Along the Y Axis"),
@@ -66,21 +76,45 @@ variables <- data.frame(stringsAsFactors=FALSE, rbind(
 	c(542,"tBodyBodyGyroJerkMag-mean()","Mean of Frequency Domain Body Body Gyro Jerk Magnitude"),
 	c(543,"tBodyBodyGyroJerkMag-std()","Standard Deviation of Frequency Domain Body Body Gyro Jerk Magnitude")))
 
+##
+##	Assign column names to refer them later.
+##
+
 colnames(variables) <- c("variableIndex", "variableShortName", "variableDescriptiveName")
+
+##
+##	Concatenate/RBIND Train and Test Subjects in the UCI HAR Dataset 
+##
 
 trainSubjects <- read.table("./UCI HAR Dataset/train/subject_train.txt")
 testSubjects <- read.table("./UCI HAR Dataset/test/subject_test.txt")
 subjects <- rbind(trainSubjects,testSubjects)
 
+##
+##	Concatenate/RBIND Train and Test Activities in the UCI HAR Dataset 
+##
+
 trainActivities <- read.table("./UCI HAR Dataset/train/y_train.txt")
 testActivities <- read.table("./UCI HAR Dataset/test/y_test.txt")
 activities <- rbind(trainActivities,testActivities)
+
+##
+##	Concatenate/RBIND Train and Test Feature/Variable Measurements in the UCI HAR Dataset 
+##
 
 trainMeasurements <- read.table("./UCI HAR Dataset/train/X_train.txt")
 testMeasurements <- read.table("./UCI HAR Dataset/test/X_test.txt")
 measurements <- rbind(trainMeasurements,testMeasurements)
 
+##
+##	Build a new intermediary data frame by Concatenating/CBIND-ing the Subjects and the Activities in the experiment
+##
+
 m <- cbind(subjects, activities)
+
+##
+##	Concatenate/CBIND the Variable Values/Measurements for the 66 Pre-Selected Variables (having both Mean and Std)
+##
 
 for(i in 1:dim(variables)[1])
 {
@@ -88,11 +122,27 @@ for(i in 1:dim(variables)[1])
 	m <- cbind(m, measurements[,variableIndex])
 }
 
+##
+##	Assign the resulting data frame to the "measurements" variable.
+##	Assign column names to Subject and Activity columns for further reference.
+##
+
 measurements <- m
 colnames(measurements) <- c("Subject", "Activity")
 
+##	Define the future "tidyDataSet" data frame
 tidyDataSet <- data.frame(Subject=integer(), Activity=character(), Variable=character(), Average=numeric(), stringsAsFactors=FALSE)
+
+##	Declare descriptive activity names to replace ids in experiment data
 activityNames <- c("Walking", "Walking Upstairs", "Walking Downstairs", "Sitting", "Standing", "Laying")
+
+##
+##	1. Iterate through all combinations of (Subject, Activity, Variable) triplets in the "measurements" data set.
+##	2. Select the set of Variable values corresponding to a (Subject, Activity, Variable) triplet.
+##	3. Compute Average for the Variable's values.
+##	4. Add a new row to the tidyDataSet with (Subject, Activity, Variable, Average) values.
+##	   (used declarative Activity and Variable names)
+##
 
 for (subject in 1:30)
 {
@@ -107,10 +157,15 @@ for (subject in 1:30)
 			activityName <- activityNames[activity]
 			variableDescriptiveName <- variables[variable,"variableDescriptiveName"]
 			
-			tidyDataSet <- rbind(tidyDataSet, data.frame(Subject=subject, Activity=activityName, Variable=variableDescriptiveName, Average=average, stringsAsFactors=FALSE))
+			tidyDataSet <- rbind(tidyDataSet, data.frame(
+				Subject=subject, Activity=activityName, Variable=variableDescriptiveName, Average=average, stringsAsFactors=FALSE))
 		}
 	}
 }
+
+##
+##	Write tidyDataSet data frame into "TidyDataSet.txt" file.
+##
 
 write.table(tidyDataSet, file="TidyDataSet.txt", col.names=TRUE, row.names=FALSE, sep=",")
 
